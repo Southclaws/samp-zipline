@@ -309,7 +309,7 @@ timer ZiplineUpdate[50](playerid)
 			zip_Data[zip_currentZipline[playerid]][zip_vecZ],
 			x, y, z);
 
-		if(dist > 1.0)
+		if(dist > 5.0)
 		{
 			ExitZipline(playerid);
 			return 1;
