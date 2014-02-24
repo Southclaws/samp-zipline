@@ -7,8 +7,10 @@
 		areas quickly. Warning: does not work well with laggy players.
 
 		Dependencies:
-			y_iterate
-			streamer plugin
+			YSI/y_iterate - Y_Less
+			YSI/y_timers - Y_Less
+			Streamer Plugin - Incognito
+			Line - Southclaw
 
 		Do what you want with it, but keep my name on it :)
 
@@ -277,7 +279,7 @@ ExitZipline(playerid)
 	SetPlayerVelocity(playerid,
 		zip_Data[tmpid][zip_vecX] * zip_PlayerSpeedMult[playerid],
 		zip_Data[tmpid][zip_vecY] * zip_PlayerSpeedMult[playerid],
-		(zip_Data[tmpid][zip_vecZ] + 0.05) * zip_PlayerSpeedMult[playerid]);
+		(zip_Data[tmpid][zip_vecZ] + (GetPlayerPing(playerid) * 0.0009)) * zip_PlayerSpeedMult[playerid]);
 
 	stop zip_UpdateTimer[playerid];
 
@@ -294,8 +296,7 @@ timer ZiplineUpdate[50](playerid)
 			Float:x,
 			Float:y,
 			Float:z,
-			Float:dist,
-			Float:heightmult = 0.06;
+			Float:dist;
 
 		GetPlayerPos(playerid, x, y, z);
 
@@ -308,18 +309,19 @@ timer ZiplineUpdate[50](playerid)
 			zip_Data[zip_currentZipline[playerid]][zip_vecZ],
 			x, y, z);
 
-		if(dist > 0.2)
+		if(dist > 1.0)
 		{
-			heightmult = 0.03;
+			ExitZipline(playerid);
 			return 1;
 		}
 
 		SetPlayerVelocity(playerid,
 			zip_Data[zip_currentZipline[playerid]][zip_vecX] * zip_PlayerSpeedMult[playerid],
 			zip_Data[zip_currentZipline[playerid]][zip_vecY] * zip_PlayerSpeedMult[playerid],
-			(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + heightmult) * zip_PlayerSpeedMult[playerid]);
+			(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + (GetPlayerPing(playerid) * 0.0009)) * zip_PlayerSpeedMult[playerid]);
 
-		if(zip_PlayerSpeedMult[playerid] < 0.5)zip_PlayerSpeedMult[playerid] += 0.01;
+		if(zip_PlayerSpeedMult[playerid] < 0.5)
+			zip_PlayerSpeedMult[playerid] += 0.01;
 	}
 
 	return 1;
