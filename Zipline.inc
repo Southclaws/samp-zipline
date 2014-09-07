@@ -85,10 +85,7 @@ hook OnGameModeInit()
 ==============================================================================*/
 
 
-stock CreateZipline(
-	Float:x1, Float:y1, Float:z1,
-	Float:x2, Float:y2, Float:z2,
-	worldid = 0, interiorid = 0)
+stock CreateZipline(Float:x1, Float:y1, Float:z1, Float:x2, Float:y2, Float:z2, worldid = 0, interiorid = 0)
 {
 	new id = Iter_Free(zip_Index);
 
@@ -125,6 +122,36 @@ stock CreateZipline(
 	Iter_Add(zip_Index, id);
 
 	return id;
+}
+
+stock DestroyZipline(ziplineid)
+{
+	if(!Iter_Contains(zip_Index, ziplineid))
+		return 0;
+
+	DestroyDynamicArea(zip_Data[id][zip_startArea]);
+	DestroyDynamicArea(zip_Data[id][zip_endArea]);
+
+	DestroyLineSegment(zip_Data[id][zip_lineID]);
+
+	zip_Data[id][zip_startArea] = -1;
+	zip_Data[id][zip_endArea] = -1;
+	zip_Data[id][zip_lineID] = INVALID_LINE_SEGMENT_ID;
+
+	zip_Data[id][zip_startPosX] = 0.0;
+	zip_Data[id][zip_startPosY] = 0.0;
+	zip_Data[id][zip_startPosZ] = 0.0;
+
+	zip_Data[id][zip_endPosX] = 0.0;
+	zip_Data[id][zip_endPosY] = 0.0;
+	zip_Data[id][zip_endPosZ] = 0.0;
+
+	zip_Data[id][zip_world] = 0;
+	zip_Data[id][zip_interior] = 0;
+
+	Iter_Remove(zip_Index, ziplineid);
+
+	return 1;
 }
 
 
