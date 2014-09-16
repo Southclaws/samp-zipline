@@ -52,30 +52,9 @@ static
 Iterator:	zip_Index<MAX_ZIPLINE>;
 
 static
-			zip_currentZipline[MAX_PLAYERS],
+			zip_currentZipline[MAX_PLAYERS]=  {-1, ...},
 Timer:		zip_UpdateTimer[MAX_PLAYERS],
 Float:		zip_PlayerSpeedMult[MAX_PLAYERS];
-
-
-/*==============================================================================
-
-	Zeroing
-
-==============================================================================*/
-
-
-#if defined FILTERSCRIPT
-hook OnFilterScriptInit()
-#else
-hook OnGameModeInit()
-#endif
-{
-	for(new i;i<MAX_PLAYERS;i++)
-	{
-		zip_currentZipline[i] = -1;
-	}
-	return CallLocalFunction("zip_OnFilterScriptInit", "");
-}
 
 
 /*==============================================================================
@@ -129,25 +108,25 @@ stock DestroyZipline(ziplineid)
 	if(!Iter_Contains(zip_Index, ziplineid))
 		return 0;
 
-	DestroyDynamicArea(zip_Data[id][zip_startArea]);
-	DestroyDynamicArea(zip_Data[id][zip_endArea]);
+	DestroyDynamicArea(zip_Data[ziplineid][zip_startArea]);
+	DestroyDynamicArea(zip_Data[ziplineid][zip_endArea]);
 
-	DestroyLineSegment(zip_Data[id][zip_lineID]);
+	DestroyLineSegment(zip_Data[ziplineid][zip_lineID]);
 
-	zip_Data[id][zip_startArea] = -1;
-	zip_Data[id][zip_endArea] = -1;
-	zip_Data[id][zip_lineID] = INVALID_LINE_SEGMENT_ID;
+	zip_Data[ziplineid][zip_startArea] = -1;
+	zip_Data[ziplineid][zip_endArea] = -1;
+	zip_Data[ziplineid][zip_lineID] = INVALID_LINE_SEGMENT_ID;
 
-	zip_Data[id][zip_startPosX] = 0.0;
-	zip_Data[id][zip_startPosY] = 0.0;
-	zip_Data[id][zip_startPosZ] = 0.0;
+	zip_Data[ziplineid][zip_startPosX] = 0.0;
+	zip_Data[ziplineid][zip_startPosY] = 0.0;
+	zip_Data[ziplineid][zip_startPosZ] = 0.0;
 
-	zip_Data[id][zip_endPosX] = 0.0;
-	zip_Data[id][zip_endPosY] = 0.0;
-	zip_Data[id][zip_endPosZ] = 0.0;
+	zip_Data[ziplineid][zip_endPosX] = 0.0;
+	zip_Data[ziplineid][zip_endPosY] = 0.0;
+	zip_Data[ziplineid][zip_endPosZ] = 0.0;
 
-	zip_Data[id][zip_world] = 0;
-	zip_Data[id][zip_interior] = 0;
+	zip_Data[ziplineid][zip_world] = 0;
+	zip_Data[ziplineid][zip_interior] = 0;
 
 	Iter_Remove(zip_Index, ziplineid);
 
@@ -166,11 +145,6 @@ public OnPlayerEnterDynamicArea(playerid, areaid)
 {
 	foreach(new i : zip_Index)
 	{
-		if(areaid == zip_Data[i][zip_startArea])
-		{
-			ShowActionText(playerid, "Press F to use zipline", 0, 140);
-		}
-
 		if(areaid == zip_Data[i][zip_endArea] && zip_currentZipline[playerid] != -1)
 		{
 			ExitZipline(playerid);
@@ -186,21 +160,6 @@ public OnPlayerEnterDynamicArea(playerid, areaid)
 #endif
 #define OnPlayerEnterDynamicArea zip_OnPlayerEnterDynamicArea
 forward zip_OnPlayerEnterDynamicArea(playerid, areaid);
-
-
-public OnPlayerLeaveDynamicArea(playerid, areaid)
-{
-	HideActionText(playerid);
-
-	return CallLocalFunction("zip_OnPlayerLeaveDynamicArea", "dd", playerid, areaid);
-}
-#if defined _ALS_OnPlayerLeaveDynamicArea
-	#undef OnPlayerLeaveDynamicArea
-#else
-	#define _ALS_OnPlayerLeaveDynamicArea
-#endif
-#define OnPlayerLeaveDynamicArea zip_OnPlayerLeaveDynamicArea
-forward zip_OnPlayerLeaveDynamicArea(playerid, areaid);
 
 
 hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
@@ -356,15 +315,15 @@ timer ZiplineUpdate[50](playerid)
 
 
 forward Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z);
-stock Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z)
+Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z)
 	return floatsqroot(floatpower((vector_y) * ((point_z) - (line_z)) - (vector_z) * ((point_y) - (line_y)), 2.0)+floatpower((vector_z) * ((point_x) - (line_x)) - (vector_x) * ((point_z) - (line_z)), 2.0)+floatpower((vector_x) * ((point_y) - (line_y)) - (vector_y) * ((point_x) - (line_x)), 2.0))/floatsqroot((vector_x) * (vector_x) + (vector_y) * (vector_y) + (vector_z) * (vector_z));
 
 forward Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY);
-stock Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY)
+Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY)
 	return zip_absoluteangle(-(90-(atan2((fDestY - fPointY), (fDestX - fPointX)))));
 
 forward Float:zip_absoluteangle(Float:angle);
-stock Float:zip_absoluteangle(Float:angle)
+Float:zip_absoluteangle(Float:angle)
 {
 	while(angle < 0.0)
 		angle += 360.0;
