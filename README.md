@@ -5,10 +5,10 @@ Create fun and useful ziplines players can use to speed across large areas quick
 
 # Dependencies
 
-[YSI/y_iterate - Y_Less](http://github.com/Y-Less/YSI)
-[YSI/y_timers - Y_Less](http://github.com/Y-Less/YSI)
-[Streamer Plugin - Incognito](http://github.com/samp-incognito/samp-streamer-plugin)
-[Line - Southclaw](http://github.com/Southclaw/Line)
+- [YSI/y_iterate - Y_Less](http://github.com/Y-Less/YSI)
+- [YSI/y_timers - Y_Less](http://github.com/Y-Less/YSI)
+- [Streamer Plugin - Incognito](http://github.com/samp-incognito/samp-streamer-plugin)
+- [Line - Southclaw](http://github.com/Southclaw/Line)
 
 
 # Resources
