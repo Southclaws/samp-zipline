@@ -14,6 +14,11 @@ Create fun and useful ziplines players can use to speed across large areas quick
 # Resources
 
 
+## Constants
+
+- ```MAX_ZIPLINE```: Zipline creation limit.
+
+
 ## Functions
 
 - ```CreateZipline(Float:x1, Float:y1, Float:z1, Float:x2, Float:y2, Float:z2, worldid = 0, interiorid = 0)```: Create a zipline between the two sets of coordinates.
