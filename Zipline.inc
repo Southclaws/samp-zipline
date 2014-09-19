@@ -344,10 +344,7 @@ Float:zip_absoluteangle(Float:angle)
 
 stock IsValidZipline(ziplineid)
 {
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return 1;
+	return Iter_Contains(zip_Index, ziplineid);
 }
 
 // zip_startArea
@@ -502,11 +499,16 @@ stock SetZiplineInterior(ziplineid, interiorid)
 
 stock IsPlayerOnZipline(playerid)
 {
-	if(!IsPlayerConnected(playerid))
-		return 0;
+	if(IsPlayerConnected(playerid))
+		return (zip_currentZipline[playerid] != -1);
 
-	if(zip_currentZipline[playerid] == -1)
-		return 0;
+	 return 0;
+}
 
-	return 1;
+stock GetPlayerZipline(playerid)
+{
+	if(IsPlayerConnected(playerid))
+		return zip_currentZipline[playerid];
+
+	 return -1;
 }
