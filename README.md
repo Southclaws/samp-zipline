@@ -1,6 +1,6 @@
 # Zipline.inc
 
-![http://img.shields.io/badge/SA%3AMP-0.3z-green.svg](http://img.shields.io/badge/SA%3AMP-0.3z-green.svg)![http://img.shields.io/gittip/Southclaw.svg](http://img.shields.io/gittip/Southclaw.svg)![http://img.shields.io/github/issues/Southclaw/Zipline.svg](http://img.shields.io/github/issues/Southclaw/Zipline.svg)![http://img.shields.io/badge/download-GitHub-blue.svg](http://img.shields.io/badge/download-GitHub-blue.svg)
+![http://img.shields.io/badge/SA%3AMP-0.3z-green.svg](http://img.shields.io/badge/SA%3AMP-0.3z-green.svg)![http://img.shields.io/gittip/Southclaw.svg](http://img.shields.io/gittip/Southclaw.svg)
 
 [![Donate](https://www.paypalobjects.com/en_GB/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=M7WJU7YN8PKGQ) Support the development of this library by donating. I can put more time into adding new features!
 
