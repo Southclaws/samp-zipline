@@ -64,6 +64,7 @@ Test:Zipline()
 	Can't really be tested properly
 	GetZiplineVector(ziplineid, x, y, z);
 	IsPlayerOnZipline(playerid);
+	GetPlayerZipline(playerid);
 */
 
 	DestroyZipline(ziplineid);

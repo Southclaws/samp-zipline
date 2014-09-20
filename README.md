@@ -42,6 +42,7 @@ Create fun and useful ziplines players can use to speed across large areas quick
 - ```GetZiplineInterior(ziplineid)```: Returns the interior in which the zipline is located.
 - ```SetZiplineInterior(ziplineid, interiorid)```: Sets the interior of the zipline and updates the line segment object accordingly.
 - ```IsPlayerOnZipline(playerid)```: Returns if a player is currently on any zipline.
+- ```GetPlayerZipline(playerid)```: Returns the zipline that a player is currently on.
 
 
 ## Hooked
