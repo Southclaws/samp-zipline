@@ -502,7 +502,7 @@ stock IsPlayerOnZipline(playerid)
 	if(IsPlayerConnected(playerid))
 		return (zip_currentZipline[playerid] != -1);
 
-	 return 0;
+	return 0;
 }
 
 stock GetPlayerZipline(playerid)
@@ -510,5 +510,5 @@ stock GetPlayerZipline(playerid)
 	if(IsPlayerConnected(playerid))
 		return zip_currentZipline[playerid];
 
-	 return -1;
+	return -1;
 }
