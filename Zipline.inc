@@ -49,7 +49,7 @@ Float:		zip_vecZ,
 
 static
 			zip_Data[MAX_ZIPLINE][E_ZIPLINE_DATA],
-Iterator:	zip_Index<MAX_ZIPLINE>;
+Iterator:   zip_Index<MAX_ZIPLINE>;
 
 static
 			zip_currentZipline[MAX_PLAYERS]=  {-1, ...},
