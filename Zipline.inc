@@ -57,6 +57,11 @@ Timer:		zip_UpdateTimer[MAX_PLAYERS],
 Float:		zip_PlayerSpeedMult[MAX_PLAYERS];
 
 
+forward Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z);
+forward Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY);
+forward Float:zip_absoluteangle(Float:angle);
+
+
 /*==============================================================================
 
 	Core
@@ -314,15 +319,12 @@ timer ZiplineUpdate[50](playerid)
 }
 
 
-forward Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z);
 Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z)
 	return floatsqroot(floatpower((vector_y) * ((point_z) - (line_z)) - (vector_z) * ((point_y) - (line_y)), 2.0)+floatpower((vector_z) * ((point_x) - (line_x)) - (vector_x) * ((point_z) - (line_z)), 2.0)+floatpower((vector_x) * ((point_y) - (line_y)) - (vector_y) * ((point_x) - (line_x)), 2.0))/floatsqroot((vector_x) * (vector_x) + (vector_y) * (vector_y) + (vector_z) * (vector_z));
 
-forward Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY);
 Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY)
 	return zip_absoluteangle(-(90-(atan2((fDestY - fPointY), (fDestX - fPointX)))));
 
-forward Float:zip_absoluteangle(Float:angle);
 Float:zip_absoluteangle(Float:angle)
 {
 	while(angle < 0.0)
