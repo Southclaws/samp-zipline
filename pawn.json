@@ -1,0 +1,15 @@
+{
+	"user": "Southclaws",
+	"repo": "samp-zipline",
+	"entry": "testing.pwn",
+	"output": "testing.amx",
+	"dependencies": [
+		"Southclaws/samp-stdlib",
+		"Southclaws/samp-logger",
+		"Zeex/amx_assembly",
+		"Misiur/YSI-Includes",
+		"samp-incognito/samp-streamer-plugin",
+		"Southclaws/samp-linegen",
+		"ScavengeSurvive/mathutil"
+	]
+}

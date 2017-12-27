@@ -1,82 +1,70 @@
-/*==============================================================================
+// built-in include guard removal
+// just in case the user has a local dependency with the same file name
+#if defined _inc_zipline
+	#undef _inc_zipline
+#endif
+// custom include-guard to ensure we don't duplicate
+#if defined _zipline_included
+	#endinput
+#endif
+#define _zipline_included
 
-
-	Southclaw's Ziplines Script
-
-		Create fun and useful ziplines players can use to speed across large
-		areas quickly. Warning: does not work well with laggy players.
-
-		Dependencies:
-			YSI/y_iterate - Y_Less
-			YSI/y_timers - Y_Less
-			Streamer Plugin - Incognito
-			Line - Southclaw
-
-		Do what you want with it, but keep my name on it :)
-
-
-==============================================================================*/
-
+#include <a_samp>
+#include <mathutil>
+#include <YSI\y_iterate>
+#include <YSI\y_timers>
+#include <streamer>
+#include <linegen>
 
 #include <YSI\y_hooks>
 
 
-#define MAX_ZIPLINE (32)
+#if !defined MAX_ZIPLINE
+	#define MAX_ZIPLINE (32)
+#endif
 
+#define INVALID_ZIPLINE_ID (-1)
 
-enum E_ZIPLINE_DATA
-{
-			zip_startArea,
-			zip_endArea,
-			zip_lineID,
+enum E_ZIPLINE_DATA {
+	zip_startArea,
+	zip_endArea,
+	zip_lineID,
 
-Float:		zip_startPosX,
-Float:		zip_startPosY,
-Float:		zip_startPosZ,
+	Float:zip_startPosX,
+	Float:zip_startPosY,
+	Float:zip_startPosZ,
 
-Float:		zip_endPosX,
-Float:		zip_endPosY,
-Float:		zip_endPosZ,
-	
-Float:		zip_vecX,
-Float:		zip_vecY,
-Float:		zip_vecZ,
+	Float:zip_endPosX,
+	Float:zip_endPosY,
+	Float:zip_endPosZ,
 
-			zip_world,
-			zip_interior
+	Float:zip_vecX,
+	Float:zip_vecY,
+	Float:zip_vecZ,
+
+	zip_world,
+	zip_interior
 }
 
-
 static
-			zip_Data[MAX_ZIPLINE][E_ZIPLINE_DATA],
-Iterator:   zip_Index<MAX_ZIPLINE>;
+	zip_Data[MAX_ZIPLINE][E_ZIPLINE_DATA],
+	zip_currentZipline[MAX_PLAYERS] = {INVALID_ZIPLINE_ID, ...},
+	Timer:zip_UpdateTimer[MAX_PLAYERS],
+	Float:zip_PlayerSpeedMult[MAX_PLAYERS];
 
-static
-			zip_currentZipline[MAX_PLAYERS]=  {-1, ...},
-Timer:		zip_UpdateTimer[MAX_PLAYERS],
-Float:		zip_PlayerSpeedMult[MAX_PLAYERS];
+new
+	Iterator:zip_Index<MAX_ZIPLINE>;
 
+forward Float:GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z);
+forward Float:GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY);
+forward Float:GetAbsoluteAngle(Float:angle);
 
-forward Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z);
-forward Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY);
-forward Float:zip_absoluteangle(Float:angle);
-
-
-/*==============================================================================
-
-	Core
-
-==============================================================================*/
-
-
-stock CreateZipline(Float:x1, Float:y1, Float:z1, Float:x2, Float:y2, Float:z2, worldid = 0, interiorid = 0)
-{
+stock CreateZipline(Float:x1, Float:y1, Float:z1, Float:x2, Float:y2, Float:z2, worldid = 0, interiorid = 0) {
 	new id = Iter_Free(zip_Index);
 
-	if(id == -1)
-	{
-		print("ERROR: MAX_ZIPLINE limit reached.");
-		return -1;
+	if(id == ITER_NONE) {
+		err("MAX_ZIPLINE limit reached");
+		return INVALID_ZIPLINE_ID;
 	}
 
 	zip_Data[id][zip_startArea] = CreateDynamicSphere(x1, y1, z1 - 1.0, 2.0, worldid, interiorid);
@@ -108,18 +96,18 @@ stock CreateZipline(Float:x1, Float:y1, Float:z1, Float:x2, Float:y2, Float:z2, 
 	return id;
 }
 
-stock DestroyZipline(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
+stock DestroyZipline(ziplineid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
 		return 0;
+	}
 
 	DestroyDynamicArea(zip_Data[ziplineid][zip_startArea]);
 	DestroyDynamicArea(zip_Data[ziplineid][zip_endArea]);
 
 	DestroyLineSegment(zip_Data[ziplineid][zip_lineID]);
 
-	zip_Data[ziplineid][zip_startArea] = -1;
-	zip_Data[ziplineid][zip_endArea] = -1;
+	zip_Data[ziplineid][zip_startArea] = INVALID_STREAMER_ID;
+	zip_Data[ziplineid][zip_endArea] = INVALID_STREAMER_ID;
 	zip_Data[ziplineid][zip_lineID] = INVALID_LINE_SEGMENT_ID;
 
 	zip_Data[ziplineid][zip_startPosX] = 0.0;
@@ -138,54 +126,201 @@ stock DestroyZipline(ziplineid)
 	return 1;
 }
 
+stock bool:IsValidZipline(ziplineid) {
+	return Iter_Contains(zip_Index, ziplineid);
+}
 
-/*==============================================================================
+// zip_startArea
+stock GetZiplineStartAreaID(ziplineid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 0;
+	}
 
-	Internal
+	return zip_Data[ziplineid][zip_startArea];
+}
 
-==============================================================================*/
+// zip_endArea
+stock GetZiplineEndAreaID(ziplineid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 0;
+	}
 
+	return zip_Data[ziplineid][zip_endArea];
+}
 
-public OnPlayerEnterDynamicArea(playerid, areaid)
+// zip_lineID
+stock GetZiplineLineID(ziplineid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 0;
+	}
+
+	return zip_Data[ziplineid][zip_lineID];
+}
+
+// zip_startPosX
+// zip_startPosY
+// zip_startPosZ
+stock GetZiplineStartPos(ziplineid, &Float:x, &Float:y, &Float:z) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	x = zip_Data[ziplineid][zip_startPosX];
+	y = zip_Data[ziplineid][zip_startPosY];
+	z = zip_Data[ziplineid][zip_startPosZ];
+
+	return 0;
+}
+
+stock SetZiplineStartPos(ziplineid, Float:x, Float:y, Float:z) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	zip_Data[ziplineid][zip_startPosX] = x;
+	zip_Data[ziplineid][zip_startPosY] = y;
+	zip_Data[ziplineid][zip_startPosZ] = z;
+
+	SetLineSegmentPoint(zip_Data[ziplineid][zip_lineID], x, y, z);
+	GetLineSegmentVector(zip_Data[ziplineid][zip_lineID], zip_Data[ziplineid][zip_vecX], zip_Data[ziplineid][zip_vecY], zip_Data[ziplineid][zip_vecZ]);
+
+	return 0;
+}
+
+// zip_endPosX
+// zip_endPosY
+// zip_endPosZ
+stock GetZiplineEndPos(ziplineid, &Float:x, &Float:y, &Float:z) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	x = zip_Data[ziplineid][zip_endPosX];
+	y = zip_Data[ziplineid][zip_endPosY];
+	z = zip_Data[ziplineid][zip_endPosZ];
+
+	return 0;
+}
+
+stock SetZiplineEndPos(ziplineid, Float:x, Float:y, Float:z) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	zip_Data[ziplineid][zip_endPosX] = x;
+	zip_Data[ziplineid][zip_endPosY] = y;
+	zip_Data[ziplineid][zip_endPosZ] = z;
+
+	SetLineSegmentDest(zip_Data[ziplineid][zip_lineID], x, y, z);
+	GetLineSegmentVector(zip_Data[ziplineid][zip_lineID], zip_Data[ziplineid][zip_vecX], zip_Data[ziplineid][zip_vecY], zip_Data[ziplineid][zip_vecZ]);
+
+	return 0;
+}
+
+// zip_vecX
+// zip_vecY
+// zip_vecZ
+stock GetZiplineVector(ziplineid, &Float:x, &Float:y, &Float:z) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	x = zip_Data[ziplineid][zip_vecX];
+	y = zip_Data[ziplineid][zip_vecY];
+	z = zip_Data[ziplineid][zip_vecZ];
+
+	return 0;
+}
+
+// zip_world
+stock GetZiplineWorld(ziplineid)
 {
-	foreach(new i : zip_Index)
-	{
-		if(areaid == zip_Data[i][zip_endArea] && zip_currentZipline[playerid] != -1)
-		{
-			ExitZipline(playerid);
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 0;
+	}
+
+	return zip_Data[ziplineid][zip_world];
+}
+
+stock SetZiplineWorld(ziplineid, worldid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	zip_Data[ziplineid][zip_world] = worldid;
+
+	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_startArea], E_STREAMER_WORLD_ID, worldid);
+	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_endArea], E_STREAMER_WORLD_ID, worldid);
+
+	SetLineSegmentWorld(zip_Data[ziplineid][zip_lineID], worldid);
+
+	return 0;
+}
+
+// zip_interior
+stock GetZiplineInterior(ziplineid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return -1;
+	}
+
+	return zip_Data[ziplineid][zip_interior];
+}
+
+stock SetZiplineInterior(ziplineid, interiorid) {
+	if(!Iter_Contains(zip_Index, ziplineid)) {
+		return 1;
+	}
+
+	zip_Data[ziplineid][zip_interior] = interiorid;
+
+	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_startArea], E_STREAMER_INTERIOR_ID, interiorid);
+	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_endArea], E_STREAMER_INTERIOR_ID, interiorid);
+
+	SetLineSegmentInterior(zip_Data[ziplineid][zip_lineID], interiorid);
+
+	return 0;
+}
+
+stock bool:IsPlayerOnZipline(playerid) {
+	if(!IsPlayerConnected(playerid)) {
+		return false;
+	}
+
+	return (zip_currentZipline[playerid] != INVALID_ZIPLINE_ID);
+}
+
+stock GetPlayerZipline(playerid) {
+	if(!IsPlayerConnected(playerid)) {
+		return INVALID_ZIPLINE_ID;
+	}
+
+	return zip_currentZipline[playerid];
+}
+
+/*
+	Internal
+*/
+
+hook OnPlayerEnterDynArea(playerid, areaid) {
+	foreach(new i : zip_Index) {
+		if(areaid == zip_Data[i][zip_endArea] && zip_currentZipline[playerid] != INVALID_ZIPLINE_ID) {
+			_zipline_exit(playerid);
 		}
 	}
 
-	return CallLocalFunction("zip_OnPlayerEnterDynamicArea", "dd", playerid, areaid);
+	return 1;
 }
-#if defined _ALS_OnPlayerEnterDynamicArea
-	#undef OnPlayerEnterDynamicArea
-#else
-	#define _ALS_OnPlayerEnterDynamicArea
-#endif
-#define OnPlayerEnterDynamicArea zip_OnPlayerEnterDynamicArea
-forward zip_OnPlayerEnterDynamicArea(playerid, areaid);
 
-
-hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
-{
-	if(newkeys & 16)
-	{
-		if(zip_currentZipline[playerid] == -1)
-		{
-			foreach(new i : zip_Index)
-			{
-				if(IsPlayerInDynamicArea(playerid, zip_Data[i][zip_startArea]))
-				{
-					EnterZipline(playerid, i);
-					return 1;
-				}
-				else if(IsPlayerInDynamicArea(playerid, zip_Data[i][zip_endArea]))
-				{
-					return 1;
-				}
-				else
-				{
+hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys) {
+	if(newkeys & 16) {
+		if(zip_currentZipline[playerid] == INVALID_ZIPLINE_ID) {
+			foreach(new i : zip_Index) {
+				if(IsPlayerInDynamicArea(playerid, zip_Data[i][zip_startArea])) {
+					_zipline_enter(playerid, i);
+					return Y_HOOKS_CONTINUE_RETURN_1;
+				} else if(IsPlayerInDynamicArea(playerid, zip_Data[i][zip_endArea])) {
+					return Y_HOOKS_CONTINUE_RETURN_1;
+				} else {
 					new
 						Float:x,
 						Float:y,
@@ -196,44 +331,38 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				
 					GetPlayerPos(playerid, x, y, z);
 
-					angleto = zip_GetAngleToPoint(zip_Data[i][zip_startPosX], zip_Data[i][zip_startPosY], x, y);
-					angleof = zip_absoluteangle(-(90-(atan2(zip_Data[i][zip_vecY], zip_Data[i][zip_vecX]))));
-					anglesum = zip_absoluteangle(angleto - angleof);
+					angleto = GetAngleToPoint(zip_Data[i][zip_startPosX], zip_Data[i][zip_startPosY], x, y);
+					angleof = GetAbsoluteAngle(-(90-(atan2(zip_Data[i][zip_vecY], zip_Data[i][zip_vecX]))));
+					anglesum = GetAbsoluteAngle(angleto - angleof);
 
-					if(anglesum > 270.0 || anglesum < 90.0)
-					{
-						angleto = zip_GetAngleToPoint(zip_Data[i][zip_endPosX], zip_Data[i][zip_endPosY], x, y);
-						angleof = zip_absoluteangle((-(90-(atan2(zip_Data[i][zip_vecY], zip_Data[i][zip_vecX])))) - 180.0);
-						anglesum = zip_absoluteangle(angleto - angleof);
+					if(anglesum > 270.0 || anglesum < 90.0) {
+						angleto = GetAngleToPoint(zip_Data[i][zip_endPosX], zip_Data[i][zip_endPosY], x, y);
+						angleof = GetAbsoluteAngle((-(90-(atan2(zip_Data[i][zip_vecY], zip_Data[i][zip_vecX])))) - 180.0);
+						anglesum = GetAbsoluteAngle(angleto - angleof);
 
-						if(anglesum > 270.0 || anglesum < 90.0)
-						{
-							new Float:dist = zip_GetDistancePointLine(
+						if(anglesum > 270.0 || anglesum < 90.0) {
+							new Float:dist = GetDistancePointLine(
 								zip_Data[i][zip_startPosX], zip_Data[i][zip_startPosY], zip_Data[i][zip_startPosZ]-1.0,
 								zip_Data[i][zip_vecX], zip_Data[i][zip_vecY], zip_Data[i][zip_vecZ],
 								x, y, z);
 
-							if(dist < 2.0)
-							{
-								EnterZipline(playerid, i);
+							if(dist < 2.0) {
+								_zipline_enter(playerid, i);
 								return 1;
 							}
 						}
 					}
 				}
 			}
-		}
-		else
-		{
-			ExitZipline(playerid);
+		} else {
+			_zipline_exit(playerid);
 		}
 	}
 
 	return 1;
 }
 
-EnterZipline(playerid, id)
-{
+_zipline_enter(playerid, id) {
 	new
 		Float:x,
 		Float:y,
@@ -260,12 +389,11 @@ EnterZipline(playerid, id)
 	return 1;
 }
 
-ExitZipline(playerid)
-{
+_zipline_exit(playerid) {
 	new tmpid = zip_currentZipline[playerid];
 
 	ClearAnimations(playerid, 1);
-	zip_currentZipline[playerid] = -1;
+	zip_currentZipline[playerid] = INVALID_ZIPLINE_ID;
 
 	SetPlayerVelocity(playerid,
 		zip_Data[tmpid][zip_vecX] * zip_PlayerSpeedMult[playerid],
@@ -277,240 +405,42 @@ ExitZipline(playerid)
 	return 1;
 }
 
-
 //hook OnPlayerUpdate(playerid)
-timer ZiplineUpdate[50](playerid)
-{
-	if(zip_currentZipline[playerid] != -1)
-	{
-		new
-			Float:x,
-			Float:y,
-			Float:z,
-			Float:dist;
-
-		GetPlayerPos(playerid, x, y, z);
-
-		dist = zip_GetDistancePointLine(
-			zip_Data[zip_currentZipline[playerid]][zip_startPosX],
-			zip_Data[zip_currentZipline[playerid]][zip_startPosY],
-			zip_Data[zip_currentZipline[playerid]][zip_startPosZ]-1.2,
-			zip_Data[zip_currentZipline[playerid]][zip_vecX],
-			zip_Data[zip_currentZipline[playerid]][zip_vecY],
-			zip_Data[zip_currentZipline[playerid]][zip_vecZ],
-			x, y, z);
-
-		if(dist > 5.0)
-		{
-			ExitZipline(playerid);
-			return 1;
-		}
-
-		SetPlayerVelocity(playerid,
-			zip_Data[zip_currentZipline[playerid]][zip_vecX] * zip_PlayerSpeedMult[playerid],
-			zip_Data[zip_currentZipline[playerid]][zip_vecY] * zip_PlayerSpeedMult[playerid],
-			(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + 0.05) * zip_PlayerSpeedMult[playerid]);
-
-		if(zip_PlayerSpeedMult[playerid] < 0.5)
-			zip_PlayerSpeedMult[playerid] += 0.01;
+timer ZiplineUpdate[50](playerid) {
+	if(zip_currentZipline[playerid] == INVALID_ZIPLINE_ID) {
+		return;
 	}
 
-	return 1;
-}
+	new
+		Float:x,
+		Float:y,
+		Float:z,
+		Float:dist;
 
+	GetPlayerPos(playerid, x, y, z);
 
-Float:zip_GetDistancePointLine(Float:line_x,Float:line_y,Float:line_z,Float:vector_x,Float:vector_y,Float:vector_z,Float:point_x,Float:point_y,Float:point_z)
-	return floatsqroot(floatpower((vector_y) * ((point_z) - (line_z)) - (vector_z) * ((point_y) - (line_y)), 2.0)+floatpower((vector_z) * ((point_x) - (line_x)) - (vector_x) * ((point_z) - (line_z)), 2.0)+floatpower((vector_x) * ((point_y) - (line_y)) - (vector_y) * ((point_x) - (line_x)), 2.0))/floatsqroot((vector_x) * (vector_x) + (vector_y) * (vector_y) + (vector_z) * (vector_z));
+	dist = GetDistancePointLine(
+		zip_Data[zip_currentZipline[playerid]][zip_startPosX],
+		zip_Data[zip_currentZipline[playerid]][zip_startPosY],
+		zip_Data[zip_currentZipline[playerid]][zip_startPosZ]-1.2,
+		zip_Data[zip_currentZipline[playerid]][zip_vecX],
+		zip_Data[zip_currentZipline[playerid]][zip_vecY],
+		zip_Data[zip_currentZipline[playerid]][zip_vecZ],
+		x, y, z);
 
-Float:zip_GetAngleToPoint(Float:fPointX, Float:fPointY, Float:fDestX, Float:fDestY)
-	return zip_absoluteangle(-(90-(atan2((fDestY - fPointY), (fDestX - fPointX)))));
+	if(dist > 5.0) {
+		_zipline_exit(playerid);
+		return;
+	}
 
-Float:zip_absoluteangle(Float:angle)
-{
-	while(angle < 0.0)
-		angle += 360.0;
+	SetPlayerVelocity(playerid,
+		zip_Data[zip_currentZipline[playerid]][zip_vecX] * zip_PlayerSpeedMult[playerid],
+		zip_Data[zip_currentZipline[playerid]][zip_vecY] * zip_PlayerSpeedMult[playerid],
+		(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + 0.05) * zip_PlayerSpeedMult[playerid]);
 
-	while(angle > 360.0)
-		angle -= 360.0;
+	if(zip_PlayerSpeedMult[playerid] < 0.5) {
+		zip_PlayerSpeedMult[playerid] += 0.01;
+	}
 
-	return angle;
-}
-
-
-/*==============================================================================
-
-	Interface
-
-==============================================================================*/
-
-
-stock IsValidZipline(ziplineid)
-{
-	return Iter_Contains(zip_Index, ziplineid);
-}
-
-// zip_startArea
-stock GetZiplineStartAreaID(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return zip_Data[ziplineid][zip_startArea];
-}
-
-// zip_endArea
-stock GetZiplineEndAreaID(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return zip_Data[ziplineid][zip_endArea];
-}
-
-// zip_lineID
-stock GetZiplineLineID(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return zip_Data[ziplineid][zip_lineID];
-}
-
-// zip_startPosX
-// zip_startPosY
-// zip_startPosZ
-stock GetZiplineStartPos(ziplineid, &Float:x, &Float:y, &Float:z)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	x = zip_Data[ziplineid][zip_startPosX];
-	y = zip_Data[ziplineid][zip_startPosY];
-	z = zip_Data[ziplineid][zip_startPosZ];
-
-	return 1;
-}
-
-stock SetZiplineStartPos(ziplineid, Float:x, Float:y, Float:z)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	zip_Data[ziplineid][zip_startPosX] = x;
-	zip_Data[ziplineid][zip_startPosY] = y;
-	zip_Data[ziplineid][zip_startPosZ] = z;
-
-	SetLineSegmentPoint(zip_Data[ziplineid][zip_lineID], x, y, z);
-	GetLineSegmentVector(zip_Data[ziplineid][zip_lineID], zip_Data[ziplineid][zip_vecX], zip_Data[ziplineid][zip_vecY], zip_Data[ziplineid][zip_vecZ]);
-
-	return 1;
-}
-
-// zip_endPosX
-// zip_endPosY
-// zip_endPosZ
-stock GetZiplineEndPos(ziplineid, &Float:x, &Float:y, &Float:z)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	x = zip_Data[ziplineid][zip_endPosX];
-	y = zip_Data[ziplineid][zip_endPosY];
-	z = zip_Data[ziplineid][zip_endPosZ];
-
-	return 1;
-}
-
-stock SetZiplineEndPos(ziplineid, Float:x, Float:y, Float:z)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	zip_Data[ziplineid][zip_endPosX] = x;
-	zip_Data[ziplineid][zip_endPosY] = y;
-	zip_Data[ziplineid][zip_endPosZ] = z;
-
-	SetLineSegmentDest(zip_Data[ziplineid][zip_lineID], x, y, z);
-	GetLineSegmentVector(zip_Data[ziplineid][zip_lineID], zip_Data[ziplineid][zip_vecX], zip_Data[ziplineid][zip_vecY], zip_Data[ziplineid][zip_vecZ]);
-
-	return 1;
-}
-
-// zip_vecX
-// zip_vecY
-// zip_vecZ
-stock GetZiplineVector(ziplineid, &Float:x, &Float:y, &Float:z)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	x = zip_Data[ziplineid][zip_vecX];
-	y = zip_Data[ziplineid][zip_vecY];
-	z = zip_Data[ziplineid][zip_vecZ];
-
-	return 1;
-}
-
-// zip_world
-stock GetZiplineWorld(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return zip_Data[ziplineid][zip_world];
-}
-
-stock SetZiplineWorld(ziplineid, worldid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	zip_Data[ziplineid][zip_world] = worldid;
-
-	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_startArea], E_STREAMER_WORLD_ID, worldid);
-	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_endArea], E_STREAMER_WORLD_ID, worldid);
-
-	SetLineSegmentWorld(zip_Data[ziplineid][zip_lineID], worldid);
-
-	return 1;
-}
-
-// zip_interior
-stock GetZiplineInterior(ziplineid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	return zip_Data[ziplineid][zip_interior];
-}
-
-stock SetZiplineInterior(ziplineid, interiorid)
-{
-	if(!Iter_Contains(zip_Index, ziplineid))
-		return 0;
-
-	zip_Data[ziplineid][zip_interior] = interiorid;
-
-	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_startArea], E_STREAMER_INTERIOR_ID, interiorid);
-	Streamer_SetIntData(STREAMER_TYPE_AREA, zip_Data[ziplineid][zip_endArea], E_STREAMER_INTERIOR_ID, interiorid);
-
-	SetLineSegmentInterior(zip_Data[ziplineid][zip_lineID], interiorid);
-
-	return 1;
-}
-
-stock IsPlayerOnZipline(playerid)
-{
-	if(IsPlayerConnected(playerid))
-		return (zip_currentZipline[playerid] != -1);
-
-	return 0;
-}
-
-stock GetPlayerZipline(playerid)
-{
-	if(IsPlayerConnected(playerid))
-		return zip_currentZipline[playerid];
-
-	return -1;
+	return;
 }
