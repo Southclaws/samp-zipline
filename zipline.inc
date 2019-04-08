@@ -398,7 +398,7 @@ _zipline_exit(playerid) {
 	SetPlayerVelocity(playerid,
 		zip_Data[tmpid][zip_vecX] * zip_PlayerSpeedMult[playerid],
 		zip_Data[tmpid][zip_vecY] * zip_PlayerSpeedMult[playerid],
-		(zip_Data[tmpid][zip_vecZ] + 0.05) * zip_PlayerSpeedMult[playerid]);
+		(zip_Data[tmpid][zip_vecZ] + 0.03) * zip_PlayerSpeedMult[playerid]);
 
 	stop zip_UpdateTimer[playerid];
 
@@ -436,7 +436,7 @@ timer ZiplineUpdate[50](playerid) {
 	SetPlayerVelocity(playerid,
 		zip_Data[zip_currentZipline[playerid]][zip_vecX] * zip_PlayerSpeedMult[playerid],
 		zip_Data[zip_currentZipline[playerid]][zip_vecY] * zip_PlayerSpeedMult[playerid],
-		(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + 0.05) * zip_PlayerSpeedMult[playerid]);
+		(zip_Data[zip_currentZipline[playerid]][zip_vecZ] + 0.03) * zip_PlayerSpeedMult[playerid]);
 
 	if(zip_PlayerSpeedMult[playerid] < 0.5) {
 		zip_PlayerSpeedMult[playerid] += 0.01;
